@@ -7,15 +7,37 @@
  */
 define('BASE_PATH', '/srv/http');
 define('EXCLUDED_DIRS', ['.git', 'api']);
+define('EXTRA_PATHS', ['/usr/share/webapps']);
 
 header('Cache-Control: no-store, no-cache, must-revalidate');
-$dirs = array_values(array_filter(scandir(BASE_PATH), function($d) {
-    $path = BASE_PATH . '/' . $d;
-    return $d[0] !== '.' && (is_dir($path) || is_link($path)) && !in_array($d, EXCLUDED_DIRS);
-}));
 $items = [];
-foreach ($dirs as $dir) {
-    $items[] = ['name' => $dir, 'url' => "/$dir"];
+
+$scanDir = function($base) {
+    $dirs = array_filter(scandir($base), function($d) {
+        return $d[0] !== '.';
+    });
+    $result = [];
+    foreach ($dirs as $dir) {
+        $path = $base . '/' . $dir;
+        if (is_dir($path) || is_link($path)) {
+            $result[] = ['name' => $dir, 'path' => $path];
+        }
+    }
+    return $result;
+};
+
+foreach ($scanDir(BASE_PATH) as $item) {
+    if (!in_array(basename($item['path']), EXCLUDED_DIRS)) {
+        $items[] = ['name' => $item['name'], 'url' => BASE_PATH === '/srv/http' ? "/".$item['name'] : $item['path']];
+    }
+}
+
+foreach (EXTRA_PATHS as $extraPath) {
+    if (is_dir($extraPath)) {
+        foreach ($scanDir($extraPath) as $item) {
+            $items[] = ['name' => $item['name'], 'url' => $item['path']];
+        }
+    }
 }
 ?>
 <!DOCTYPE html>
