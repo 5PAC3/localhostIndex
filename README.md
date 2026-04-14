@@ -12,7 +12,7 @@ Scansiona automaticamente tutte le sottocartelle di `/srv/http` (escludendo `.gi
 - **Pinning**: `p` per fissare un sito in cima alla lista (perso in `localStorage`)
 - **Ricerca**: filtro istantaneo per nome o URL
 - **Design**: tema scuro con JetBrains Mono, responsive per mobile
-- ** Nessuna cache**: header `no-store` per evitare caching
+- *Nessuna cache*: header `no-store` per evitare caching
 
 ## Setup
 
