@@ -35,7 +35,11 @@ foreach ($scanDir(BASE_PATH) as $item) {
 foreach (EXTRA_PATHS as $extraPath) {
     if (is_dir($extraPath)) {
         foreach ($scanDir($extraPath) as $item) {
-            $items[] = ['name' => $item['name'], 'url' => $item['path']];
+            $linkPath = BASE_PATH . '/' . $item['name'];
+            if (!file_exists($linkPath) && !is_link($linkPath)) {
+                @symlink($item['path'], $linkPath);
+            }
+            $items[] = ['name' => $item['name'], 'url' => '/'.$item['name']];
         }
     }
 }
