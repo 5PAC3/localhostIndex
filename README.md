@@ -23,12 +23,16 @@ Scansiona automaticamente tutte le sottocartelle di `/srv/http` (escludendo `.gi
      ```
 2. Accedi a `http://localhost`
 
-## Struttura
+## Configurazione
 
 ```php
-$dirs = array_filter(scandir('/srv/http'), function($d) {
-    return $d[0] !== '.' && is_dir("/srv/http/$d") && !in_array($d, ['.git', 'api']);
-});
+define('BASE_PATH', '/srv/http');       // directory principale da scansionare
+define('EXCLUDED_DIRS', ['.git', 'api']); // cartelle da escludere
+define('EXTRA_PATHS', ['/usr/share/webapps']); // directory extra (es. app di sistema)
 ```
 
-Modifica questo filtro per cambiare quali cartelle vengono mostrate.
+Modifica questi valori per cambiare quali cartelle vengono mostrate.
+
+## Struttura
+
+Lo script scansiona BASE_PATH e EXTRA_PATHS, escludendo le cartelle in EXCLUDED_DIRS.
