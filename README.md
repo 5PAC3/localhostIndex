@@ -17,6 +17,10 @@ Scansiona automaticamente tutte le sottocartelle di `/srv/http` (escludendo `.gi
 ## Setup
 
 1. Posiziona `index.php` nella root del document root (es. `/srv/http/index.php`)
+   - **Opzione consigliata**: crea un symlink invece di copiare il file, così le modifiche allo script saranno immediatamente disponibile senza dover ricopiare:
+     ```bash
+     ln -s /path/to/localhostIndex/index.php /srv/http/index.php
+     ```
 2. Accedi a `http://localhost`
 
 ## Struttura
