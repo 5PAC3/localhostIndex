@@ -1,7 +1,17 @@
 <?php
+/**
+ * Configurazione - Modifica questi valori per adattarli al tuo ambiente
+ * 
+ * BASE_PATH: la directory da scansionare (es. '/srv/http', '/var/www/html')
+ * EXCLUDED_DIRS: cartelle da escludere dall'elenco
+ */
+define('BASE_PATH', '/srv/http');
+define('EXCLUDED_DIRS', ['.git', 'api']);
+
 header('Cache-Control: no-store, no-cache, must-revalidate');
-$dirs = array_values(array_filter(scandir('/srv/http'), function($d) {
-    return $d[0] !== '.' && is_dir("/srv/http/$d") && !in_array($d, ['.git', 'api']);
+$dirs = array_values(array_filter(scandir(BASE_PATH), function($d) {
+    $path = BASE_PATH . '/' . $d;
+    return $d[0] !== '.' && (is_dir($path) || is_link($path)) && !in_array($d, EXCLUDED_DIRS);
 }));
 $items = [];
 foreach ($dirs as $dir) {
