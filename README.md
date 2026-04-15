@@ -1,5 +1,7 @@
 # localhost Index
 
+⚠️ **Nota**: Se la navigazione nelle sottocartelle non funziona, vedi la sezione [URL Belle](#url-belle-opzionale) alla fine di questo file.
+
 Launcher PHP per navigare i progetti nella directory `/srv/http` dello stack LAMP.
 
 ## Funzionamento
@@ -56,6 +58,39 @@ define('EXTRA_PATHS', ['/usr/share/webapps']); // directory extra (es. app di si
 ```
 
 Modifica questi valori per cambiare quali cartelle vengono mostrate.
+
+## Navigazione sottocartelle
+
+Lo script supporta la navigazione nelle sottocartelle. Se una cartella contiene un `index.php` o `index.html`, viene caricato direttamente.
+
+## URL Belle (opzionale)
+
+Per avere URL come `/cartella/` invece di `/index.php?path=/cartella`, serve abilitare mod_rewrite.
+
+### Se la navigazione non funziona:
+
+1. Verifica che `mod_rewrite` sia abilitato:
+   ```bash
+   # Apache - Ubuntu/Debian
+   a2enmod rewrite
+   
+   # Riavvia Apache
+   sudo systemctl restart apache2
+   ```
+
+2. Abilita `AllowOverride` nel file di configurazione Apache (es. `/etc/apache2/sites-available/000-default.conf`):
+   ```apache
+   <Directory "/srv/http">
+       AllowOverride FileInfo
+   </Directory>
+   ```
+
+3. Riavvia Apache:
+   ```bash
+   sudo systemctl restart apache2
+   ```
+
+Lo script funziona anche senza mod_rewrite (usa URL con query string), ma le URL sono meno belle.
 
 ## Struttura
 

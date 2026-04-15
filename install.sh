@@ -4,6 +4,7 @@ set -e
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 HTTP_ROOT="${HTTP_ROOT:-/srv/http}"
+BASE_PATH="${BASE_PATH:-$HTTP_ROOT}"
 
 echo "Installing localhostIndex to $HTTP_ROOT..."
 
@@ -25,23 +26,25 @@ fi
 echo "Creating index.php symlink..."
 ln -s "$SCRIPT_DIR/index.php" "$HTTP_ROOT/index.php"
 
-echo "Installing EXTRA_PATHS apps..."
-
-EXTRA_PATHS=("/usr/share/webapps")
+EXTRA_PATHS=("${EXTRA_PATHS:-/usr/share/webapps}")
 for extraPath in "${EXTRA_PATHS[@]}"; do
-    if [ -d "$extraPath" ]; then
-        for dir in "$extraPath"/*; do
-            [ -d "$dir" ] || continue
-            name=$(basename "$dir")
-            linkPath="$HTTP_ROOT/$name"
-            if [ ! -e "$linkPath" ]; then
-                echo "  Creating symlink: $name -> $dir"
-                ln -s "$dir" "$linkPath"
-            else
-                echo "  Skipping $name (already exists)"
-            fi
-        done
-    fi
+    [ -d "$extraPath" ] || continue
+    for dir in "$extraPath"/*; do
+        [ -d "$dir" ] || continue
+        name=$(basename "$dir")
+        linkPath="$HTTP_ROOT/$name"
+        if [ ! -e "$linkPath" ]; then
+            echo "  Creating symlink: $name -> $dir"
+            ln -s "$dir" "$linkPath"
+        else
+            echo "  Skipping $name (already exists)"
+        fi
+    done
 done
 
+echo ""
 echo "Done!"
+echo ""
+echo "Usage:"
+echo "  BASE_PATH=/var/www/html ./install.sh    # Custom document root"
+echo "  EXTRA_PATHS='/opt/apps' ./install.sh  # Custom extra paths"
