@@ -18,6 +18,11 @@ Scansiona automaticamente tutte le sottocartelle di `/srv/http` (escludendo `.gi
 
 ### Opzione 1: Script di installazione (consigliato)
 
+> **Nota:** Prima di eseguire lo script, assicurati che sia eseguibile:
+> ```bash
+> chmod +x install.sh
+> ```
+
 Lo script `install.sh` crea automaticamente i symlink necessari:
 
 ```bash
