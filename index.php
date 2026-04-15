@@ -6,7 +6,7 @@
  * EXCLUDED_DIRS: cartelle da escludere dall'elenco
  */
 define('BASE_PATH', '/srv/http');
-define('EXCLUDED_DIRS', ['.git', 'api']);
+define('EXCLUDED_DIRS', ['.git', 'api', 'localhostIndex', 'index.php']);
 define('EXTRA_PATHS', ['/usr/share/webapps']);
 
 header('Cache-Control: no-store, no-cache, must-revalidate');
@@ -38,6 +38,8 @@ foreach (EXTRA_PATHS as $extraPath) {
             $linkPath = BASE_PATH . '/' . $item['name'];
             if (!file_exists($linkPath) && !is_link($linkPath)) {
                 @symlink($item['path'], $linkPath);
+            } else {
+                continue;
             }
             $items[] = ['name' => $item['name'], 'url' => '/'.$item['name']];
         }
