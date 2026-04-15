@@ -1,7 +1,5 @@
 # localhost Index
 
-⚠️ **Nota**: Se la navigazione nelle sottocartelle non funziona, vedi la sezione [URL Belle](#url-belle-opzionale) alla fine di questo file.
-
 Launcher PHP per navigare i progetti nella directory `/srv/http` dello stack LAMP.
 
 ## Funzionamento
@@ -95,3 +93,11 @@ Lo script funziona anche senza mod_rewrite (usa URL con query string), ma le URL
 ## Struttura
 
 Lo script scansiona BASE_PATH e EXTRA_PATHS, escludendo le cartelle in EXCLUDED_DIRS.
+
+## Known Issues
+
+### La navigazione nelle sottocartelle non funziona
+
+Se cliccando su una cartella appare un errore o vedi il contenuto della cartella invece dell'elenco, significa che `mod_rewrite` non è attivo o `AllowOverride` è disabilitato.
+
+Vedi la sezione [URL Belle](#url-belle-opzionale) per risolvere.
