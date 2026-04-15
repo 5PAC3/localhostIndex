@@ -21,7 +21,7 @@ if (!empty($pathParam) && is_dir($currentPath)) {
     foreach (['index.php', 'index.html'] as $indexFile) {
         $indexPath = $currentPath . '/' . $indexFile;
         if (file_exists($indexPath) && realpath($indexPath) !== realpath(__FILE__)) {
-            include $indexPath;
+            header('Location: ' . $pathParam . '/');
             exit;
         }
     }
