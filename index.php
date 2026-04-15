@@ -2,12 +2,36 @@
 /**
  * Configurazione - Modifica questi valori per adattarli al tuo ambiente
  * 
- * BASE_PATH: la directory da scansionare (es. '/srv/http', '/var/www/html')
+ * BASE_PATH: la directory radice da scansionare (es. '/srv/http', '/var/www/html')
  * EXCLUDED_DIRS: cartelle da escludere dall'elenco
  */
-define('BASE_PATH', '/srv/http');
-define('EXCLUDED_DIRS', ['.git', 'api', 'localhostIndex', 'index.php']);
-define('EXTRA_PATHS', ['/usr/share/webapps']);
+if (!defined('BASE_PATH')) define('BASE_PATH', '/srv/http');
+if (!defined('EXCLUDED_DIRS')) define('EXCLUDED_DIRS', ['.git', 'api', 'localhostIndex', 'index.php']);
+if (!defined('EXTRA_PATHS')) define('EXTRA_PATHS', ['/usr/share/webapps']);
+
+$pathParam = $_GET['path'] ?? '';
+$pathParam = $pathParam ? '/' . ltrim($pathParam, '/') : '';
+
+$currentPath = BASE_PATH . $pathParam;
+if (!is_dir($currentPath)) {
+    $currentPath = BASE_PATH;
+}
+
+if (!empty($pathParam) && is_dir($currentPath)) {
+    foreach (['index.php', 'index.html'] as $indexFile) {
+        $indexPath = $currentPath . '/' . $indexFile;
+        if (file_exists($indexPath) && realpath($indexPath) !== realpath(__FILE__)) {
+            include $indexPath;
+            exit;
+        }
+    }
+}
+
+$relativePath = $pathParam ?: '/';
+$currentUrl = $pathParam ?: '/';
+$parentUrl = dirname($currentUrl);
+if ($parentUrl === '\\') $parentUrl = '/';
+if ($currentUrl === '/' || $currentUrl === '') $parentUrl = null;
 
 header('Cache-Control: no-store, no-cache, must-revalidate');
 $items = [];
@@ -20,29 +44,23 @@ $scanDir = function($base) {
     foreach ($dirs as $dir) {
         $path = $base . '/' . $dir;
         if (is_dir($path) || is_link($path)) {
-            $result[] = ['name' => $dir, 'path' => $path];
+            $result[] = ['name' => $dir, 'path' => $path, 'isDir' => true];
+        } elseif (is_file($path)) {
+            $result[] = ['name' => $dir, 'path' => $path, 'isDir' => false];
         }
     }
+    usort($result, function($a, $b) {
+        if ($a['isDir'] !== $b['isDir']) return $a['isDir'] ? -1 : 1;
+        return strcasecmp($a['name'], $b['name']);
+    });
     return $result;
 };
 
-foreach ($scanDir(BASE_PATH) as $item) {
-    if (!in_array(basename($item['path']), EXCLUDED_DIRS)) {
-        $items[] = ['name' => $item['name'], 'url' => BASE_PATH === '/srv/http' ? "/".$item['name'] : $item['path']];
-    }
-}
-
-foreach (EXTRA_PATHS as $extraPath) {
-    if (is_dir($extraPath)) {
-        foreach ($scanDir($extraPath) as $item) {
-            $linkPath = BASE_PATH . '/' . $item['name'];
-            if (!file_exists($linkPath) && !is_link($linkPath)) {
-                @symlink($item['path'], $linkPath);
-            } else {
-                continue;
-            }
-            $items[] = ['name' => $item['name'], 'url' => '/'.$item['name']];
-        }
+foreach ($scanDir($currentPath) as $item) {
+    $itemName = basename($item['path']);
+    if (!in_array($itemName, EXCLUDED_DIRS)) {
+        $url = '/' . ltrim($currentUrl . '/' . $item['name'], '/');
+        $items[] = ['name' => $item['name'], 'url' => $url, 'isDir' => $item['isDir']];
     }
 }
 ?>
@@ -50,7 +68,7 @@ foreach (EXTRA_PATHS as $extraPath) {
 <html lang="it">
 <head>
     <meta charset="UTF-8">
-    <title>launcher</title>
+    <title><?= htmlspecialchars($relativePath) ?></title>
     <link rel="icon" type="image/x-icon" href="/favicon.ico">
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <style>
@@ -60,8 +78,10 @@ foreach (EXTRA_PATHS as $extraPath) {
         .container { max-width: 800px; margin: 0 auto; }
         header { display: flex; justify-content: space-between; align-items: center; padding-bottom: 20px; border-bottom: 1px solid var(--border); margin-bottom: 20px; }
         .logo { color: var(--highlight); font-weight: 600; font-size: 16px; }
-        .logo::before { content: "~/"; color: var(--text-dim); }
-        .logo::after { content: "workspace"; color: var(--text-dim); }
+        .breadcrumbs { display: flex; align-items: center; gap: 4px; color: var(--text-dim); font-size: 13px; overflow-x: auto; }
+        .breadcrumbs a { color: var(--text); text-decoration: none; }
+        .breadcrumbs a:hover { color: var(--highlight); }
+        .breadcrumbs span { color: var(--text-dim); }
         .count { font-size: 12px; color: var(--text-dim); }
         .search { margin-bottom: 20px; }
         .search input { width: 100%; background: var(--bg-alt); border: 1px solid var(--border); color: var(--text); font-family: inherit; font-size: 13px; padding: 10px 14px; outline: none; }
@@ -89,7 +109,17 @@ foreach (EXTRA_PATHS as $extraPath) {
 <body>
     <div class="container">
         <header>
-            <div class="logo"></div>
+            <div class="logo">
+                <div class="breadcrumbs">
+                    <a href="/">/</a>
+                    <?php $parts = array_filter(explode('/', $relativePath)); ?>
+                    <?php $path = ''; ?>
+                    <?php foreach ($parts as $part): ?>
+                        <?php $path .= '/' . $part; ?>
+                        <span>/</span><a href="/localhostIndex/index.php?path=<?= htmlspecialchars($path) ?>"><?= htmlspecialchars($part) ?></a>
+                    <?php endforeach; ?>
+                </div>
+            </div>
             <div class="count"><span id="count">0</span> items</div>
         </header>
         <div class="search">
@@ -97,11 +127,13 @@ foreach (EXTRA_PATHS as $extraPath) {
         </div>
         <div class="list" id="list"></div>
         <footer>
-            <span><kbd>↑</kbd><kbd>↓</kbd> navigate <kbd>enter</kbd> open <kbd>/</kbd> search <kbd>p</kbd> pin</span>
-            <span>local workspace</span>
+            <span><kbd>↑</kbd><kbd>↓</kbd> navigate <kbd>enter</kbd> open <kbd>/</kbd> search <kbd>p</kbd> pin <kbd>backspace</kbd> back</span>
+            <span><?= htmlspecialchars($relativePath) ?></span>
         </footer>
     </div>
     <script>
+        const currentPath = <?= json_encode($currentUrl) ?>;
+        const parentPath = <?= json_encode($parentUrl) ?>;
         const pinned = JSON.parse(localStorage.getItem('pinned') || '[]');
         const sites = <?= json_encode($items) ?>;
         let items = sites.map(s => ({...s, pinned: pinned.includes(s.name)}));
@@ -132,9 +164,9 @@ foreach (EXTRA_PATHS as $extraPath) {
                 return;
             }
             listEl.innerHTML = filtered.map((site, i) => `
-                <div class="item${site.pinned ? ' pinned' : ''}${i === selected ? ' selected' : ''}" data-url="${site.url}" data-index="${i}">
+                <div class="item${site.pinned ? ' pinned' : ''}${i === selected ? ' selected' : ''}" data-url="${site.url}" data-dir="${site.isDir}" data-index="${i}">
                     <div class="pin" data-action="pin">&bull;</div>
-                    <div class="icon">&gt;</div>
+                    <div class="icon">${site.isDir ? '>' : 'f'}</div>
                     <div class="name">${site.name}</div>
                     <div class="url">${site.url}</div>
                     <div class="arrow">&rarr;</div>
@@ -162,8 +194,17 @@ foreach (EXTRA_PATHS as $extraPath) {
 
         function openCurrent() {
             if (filtered[selected]) {
-                window.location.href = filtered[selected].url;
+                const isDir = filtered[selected].isDir;
+                if (isDir) {
+                    window.location.href = '/localhostIndex/index.php?path=' + encodeURIComponent(filtered[selected].url);
+                } else {
+                    window.location.href = filtered[selected].url;
+                }
             }
+        }
+
+        function goBack() {
+            if (parentPath) window.location.href = '/localhostIndex/index.php?path=' + encodeURIComponent(parentPath);
         }
 
         searchEl.addEventListener("input", e => filter(e.target.value));
@@ -178,7 +219,14 @@ foreach (EXTRA_PATHS as $extraPath) {
                 return;
             }
             const item = e.target.closest(".item");
-            if (item) window.location.href = item.dataset.url;
+            if (item) {
+                const isDir = item.dataset.dir === 'true';
+                if (isDir) {
+                    window.location.href = '/localhostIndex/index.php?path=' + encodeURIComponent(item.dataset.url);
+                } else {
+                    window.location.href = item.dataset.url;
+                }
+            }
         });
 
         document.addEventListener("keydown", e => {
@@ -188,6 +236,7 @@ foreach (EXTRA_PATHS as $extraPath) {
             else if (e.key === "/") { e.preventDefault(); searchEl.focus(); }
             else if (e.key === "Escape") { searchEl.blur(); searchEl.value = ''; filter(''); }
             else if (e.key === "p") { e.preventDefault(); const realIndex = items.findIndex(i => i.url === filtered[selected].url); togglePin(realIndex); }
+            else if (e.key === "Backspace" && document.activeElement.tagName !== 'INPUT') { e.preventDefault(); goBack(); }
         });
 
         render();
